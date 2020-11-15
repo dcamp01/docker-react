@@ -1,10 +1,30 @@
 language: generic
+#require super user permissions to run builds
 sudo: required
 services:
-  - docker
-
+    - docker #install a copy of Docker cli
+#setup before deploying project or running tests
 before_install:
-  - docker build -t dcamp01/docker-react -f Dockerfile.dev .
-
+    #build docker image in pwd with a tag. we use convention but you can use any tag you want.
+    - docker build -t dcamp01/docker-react -f Dockerfile.dev .
+#tell travis how to run test suite
+#script contains all commands needed to run test suite
+#if after any of these commands Travis gets RC <> 0 it assumes build fails
 script:
+  #default behavior of npm run test is that it awaits a command after the test is run. To avoid this we set CI=true
   - docker run -e CI=true dcamp01/docker-react npm run test
+
+deploy:
+  #config to tell travis how to deploy to AWS
+  #travis is delivered with some presupported platforms
+  provider: elasticbeanstalk
+  region: "us-east-2"
+  app: "docker-react"
+  env: "DockerReact-env"
+  bucket_name: "elasticbeanstalk-us-east-2-789779327928"
+  bucket_path: "docker-react"
+  on:
+    #only deploy if changes are merged into master branch.
+    branch: master
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: "$AWS_SECRET_KEY"
